@@ -46,7 +46,7 @@ import com.google.gson.JsonObject;
  * Build a test catalog of all the tests within the bundle. The Test Class type
  * needs @Test to be included
  * 
- * @author Michael Baylis
+ * @author Michael Baylis - test update
  *
  */
 @Mojo(name = "bundletestcat", defaultPhase = LifecyclePhase.PACKAGE, threadSafe = true, requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
