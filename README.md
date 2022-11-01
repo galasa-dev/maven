@@ -18,6 +18,16 @@ If you are interested in the development of Galasa, take a look at the documenta
 
 Take a look at the [contribution guidelines](https://github.com/galasa-dev/projectmanagement/blob/main/contributing.md).
 
+## How to build locally
+Use the `build-locally.sh` script to build this code locally.
+
+Environment variable over-rides:
+
+- `LOGS_DIR` - Optional. Where logs are placed. Defaults to creating a temporary directory.
+- `SOURCE_MAVEN` - Optional. Where a maven repository is from which the build will draw artifacts.
+- `DEBUG` - Optional. Defaults to 0 (off)
+- `GPG_PASSPHRASE` - Used to sign and verify artifacts during the build
+
 ## License
 
 This code is under the [Eclipse Public License 2.0](https://github.com/galasa-dev/maven/blob/main/LICENSE).
