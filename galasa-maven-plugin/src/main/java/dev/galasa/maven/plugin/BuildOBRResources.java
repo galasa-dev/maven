@@ -1,7 +1,7 @@
 /*
- * Licensed Materials - Property of IBM
- * 
- * (c) Copyright IBM Corp. 2019.
+ * Copyright contributors to the Galasa project
+ *
+ * SPDX-License-Identifier: EPL-2.0
  */
 package dev.galasa.maven.plugin;
 
@@ -103,10 +103,33 @@ public class BuildOBRResources extends AbstractMojo {
         for (Object dependency : project.getDependencyArtifacts()) {
             if (dependency instanceof DefaultArtifact) {
                 DefaultArtifact artifact = (DefaultArtifact) dependency;
+
                 if (artifact.isResolved() && artifact.getScope().equals("compile")) {
-                    if (artifact.getFile().getName().endsWith(".jar")) {
+
+                    getLog().info("BuildOBRResources: Artifact resolved, and scope is compile. "+
+                            " id:"+artifact.getId()+
+                            " classifier:"+artifact.getClassifier()
+                    );
+
+                    File file = artifact.getFile();
+                    if (file == null) {
+                        throw new MojoFailureException("BuildOBRResources: Failed to process artifact. Null file handle."+
+                            " id:"+artifact.getId()+
+                            " classifier:"+artifact.getClassifier()
+                        );
+                    }
+
+                    String name = file.getName();
+                    if (name == null) {
+                        throw new MojoFailureException("BuildOBRResources: Failed to process artifact. Null name"+
+                            " id:"+artifact.getId()+
+                            " classifier:"+artifact.getClassifier()
+                        );
+                    }
+
+                    if (name.endsWith(".jar")) {
                         processBundle(artifact, newRepository, obrDataModelHelper);
-                    } else if (artifact.getFile().getName().endsWith(".obr")) {
+                    } else if (name.endsWith(".obr")) {
                         processObr(artifact, newRepository, obrDataModelHelper);
                     }
                 }

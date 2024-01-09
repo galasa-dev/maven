@@ -10,3 +10,5 @@ build.properties
 MANIFEST.MF
 /bin/
 *.versionsBackup
+temp/
+.vscode/
