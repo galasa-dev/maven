@@ -6,10 +6,7 @@
 package dev.galasa.maven.plugin;
 
 import java.net.URL;
-import java.util.Properties;
-import static org.assertj.core.api.Assertions.*;
 import org.junit.Test;
-import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 
 public class DeployTestCatalogTest { 
@@ -224,35 +221,8 @@ public class DeployTestCatalogTest {
 
 
 
-    @Test
-    public void TestCalculateTestCatalogUrlUsesBootstrapPropertyIfSet() throws Exception {
-        DeployTestCatalog command = new DeployTestCatalog();
-        Properties props = new Properties();
-        props.setProperty("framework.testcatalog.url", "https://my.explicitly.set.bootstrap.url");
-        URL calculatedUrl = command.calculateTestCatalogUrl(props, "myTestStream", new URL("https://my.bootstrap.url"));
-        assertThat(calculatedUrl.toString()).isEqualTo("https://my.explicitly.set.bootstrap.url/myTestStream");
-    }
 
-    @Test
-    public void TestCalculateTestCatalogUrlUsesBootstrapUrlByDefault() throws Exception {
-        DeployTestCatalog command = new DeployTestCatalog();
-        Properties props = new Properties();
-        // props.setProperty("framework.testcatalog.url", "https://my.explicitly.set.bootstrap.url");
-        URL calculatedUrl = command.calculateTestCatalogUrl(props, "myTestStream", new URL("https://my.bootstrap.url/bootstrap"));
-        assertThat(calculatedUrl.toString()).isEqualTo("https://my.bootstrap.url/testcatalog/myTestStream");
-    }
-
-    @Test
-    public void TestCalculateTestCatalogUrlSpotsBootstrapUrlWhichDoesntEndInBootstrap() throws Exception {
-        DeployTestCatalog command = new DeployTestCatalog();
-        Properties props = new Properties();
-        // props.setProperty("framework.testcatalog.url", "https://my.explicitly.set.bootstrap.url");
-        Exception ex = catchException( ()-> command.calculateTestCatalogUrl(props, "myTestStream", new URL("https://my.bootstrap.url/bootstrap-not-at-end")) );
-        assertThat(ex).isInstanceOf(MojoExecutionException.class);
-        
-        assertThat(ex).hasMessageContaining("Unable to calculate the test catalog url, the bootstrap url does not end with /bootstrap, need a framework.testcatalog.url property in the bootstrap");
-    }
-
+    
  
     // This is my exploration unit test.
     //
