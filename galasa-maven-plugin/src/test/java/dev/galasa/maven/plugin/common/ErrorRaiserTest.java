@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package dev.galasa.maven.plugin.error;
+package dev.galasa.maven.plugin.common;
 
 import static org.assertj.core.api.Assertions.*;
 

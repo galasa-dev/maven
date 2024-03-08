@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package dev.galasa.maven.plugin.auth;
+package dev.galasa.maven.plugin.common.auth;
 
 import java.net.URL;
 

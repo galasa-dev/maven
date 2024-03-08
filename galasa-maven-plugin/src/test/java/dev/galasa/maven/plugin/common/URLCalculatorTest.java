@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package dev.galasa.maven.plugin.url;
+package dev.galasa.maven.plugin.common;
 
 import java.net.URL;
 import java.util.Properties;
@@ -13,7 +13,6 @@ import org.junit.Test;
 
 import dev.galasa.maven.plugin.ErrorRaiserMavenImpl;
 import dev.galasa.maven.plugin.MockLog;
-import dev.galasa.maven.plugin.error.ErrorRaiser;
 
 public class URLCalculatorTest {
     @Test
