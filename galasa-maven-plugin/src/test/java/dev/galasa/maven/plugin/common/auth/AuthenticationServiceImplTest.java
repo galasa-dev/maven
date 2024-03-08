@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package dev.galasa.maven.plugin.auth;
+package dev.galasa.maven.plugin.common.auth;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -20,7 +20,8 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
 import dev.galasa.maven.plugin.MockHttpClient;
-import dev.galasa.maven.plugin.auth.beans.*;
+import dev.galasa.maven.plugin.common.GsonFactory;
+import dev.galasa.maven.plugin.common.auth.beans.*;
 
 
 public class AuthenticationServiceImplTest { 

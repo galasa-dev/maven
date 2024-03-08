@@ -1,4 +1,4 @@
-package dev.galasa.maven.plugin.auth;
+package dev.galasa.maven.plugin.common;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

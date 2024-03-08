@@ -3,19 +3,24 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package dev.galasa.maven.plugin;
+package dev.galasa.maven.plugin.common;
 
 import java.net.URL;
 import java.net.URLConnection;
 import java.text.MessageFormat;
 import java.util.Properties;
-import org.apache.maven.plugin.logging.Log;
-import org.apache.maven.plugin.MojoExecutionException;
 
-public class BootstrapLoaderImpl implements BootstrapLoader {
+public class BootstrapLoaderImpl<Ex extends Exception> implements BootstrapLoader<Ex> {
+    WrappedLog log ;
+    ErrorRaiser<Ex> errorRaiser ;
+
+    public BootstrapLoaderImpl( WrappedLog log , ErrorRaiser<Ex> errorRaiser ) {
+        this.log = log ;
+        this.errorRaiser = errorRaiser;
+    }
 
     @Override
-    public Properties getBootstrapProperties(URL bootstrapUrl, Log log ) throws MojoExecutionException {
+    public Properties getBootstrapProperties(URL bootstrapUrl) throws Ex {
         Properties bootstrapProperties = new Properties();
         try {
             URLConnection connection = bootstrapUrl.openConnection();
@@ -23,10 +28,8 @@ public class BootstrapLoaderImpl implements BootstrapLoader {
             log.info(msg);
             bootstrapProperties.load(connection.getInputStream());
             log.info("execute(): bootstrapProperties loaded: " + bootstrapProperties);
-        } catch (Exception e) {
-            String errMsg = MessageFormat.format("execute() - Unable to load bootstrap properties, Reason: {0}", e);
-            log.error(errMsg);
-            throw new MojoExecutionException(errMsg, e);
+        } catch (Exception ex) {
+            errorRaiser.raiseError(ex,"execute() - Unable to load bootstrap properties, Reason: {0}",ex.getMessage());
         }
         return bootstrapProperties;
     }

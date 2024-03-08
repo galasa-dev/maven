@@ -5,15 +5,7 @@
  */
 package dev.galasa.maven.plugin;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Properties;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -22,9 +14,17 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-import dev.galasa.maven.plugin.auth.AuthenticationService;
-import dev.galasa.maven.plugin.auth.AuthenticationServiceFactory;
-import dev.galasa.maven.plugin.auth.AuthenticationServiceFactoryImpl;
+
+import dev.galasa.maven.plugin.common.BootstrapLoader;
+import dev.galasa.maven.plugin.common.BootstrapLoaderImpl;
+import dev.galasa.maven.plugin.common.ErrorRaiser;
+import dev.galasa.maven.plugin.common.GalasaRestApiMetadata;
+import dev.galasa.maven.plugin.common.TestCatalogArtifact;
+import dev.galasa.maven.plugin.common.TestCatalogArtifactDeployer;
+import dev.galasa.maven.plugin.common.URLCalculator;
+import dev.galasa.maven.plugin.common.WrappedLog;
+import dev.galasa.maven.plugin.common.auth.AuthenticationServiceFactory;
+import dev.galasa.maven.plugin.common.auth.AuthenticationServiceFactoryImpl;
 
 /**
  * Merge all the test catalogs on the dependency list
@@ -57,11 +57,6 @@ public class DeployTestCatalog extends AbstractMojo {
     
     @Parameter(defaultValue = "${galasa.skip.deploytestcatalog}", readonly = true, required = false)
     public boolean      skipDeployTestCatalog;
-
-    // A protected variable so we can inject a mock factory if needed during unit testing.
-    protected AuthenticationServiceFactory authFactory = new AuthenticationServiceFactoryImpl();
-
-    protected BootstrapLoader bootstrapLoader = new BootstrapLoaderImpl();
 
     public void execute() throws MojoExecutionException, MojoFailureException {
 
@@ -96,18 +91,19 @@ public class DeployTestCatalog extends AbstractMojo {
             return;
         }
 
-        Properties bootstrapProperties = bootstrapLoader.getBootstrapProperties(bootstrapUrl,getLog());
+        // Instantiate maven-specific versions of the interfaces.
+        WrappedLog wrappedLog = new WrappedLogMaven(getLog());
+        AuthenticationServiceFactory authFactory = new AuthenticationServiceFactoryImpl();
+        ErrorRaiser<MojoExecutionException> errorRaiser = new ErrorRaiserMavenImpl(getLog());
+        URLCalculator<MojoExecutionException> urlCalculator = new URLCalculator<MojoExecutionException>(errorRaiser);
+        GalasaRestApiMetadata restApiMetadata = new GalasaRestApiMetadata();
+        BootstrapLoader<MojoExecutionException> bootstrapLoader = new BootstrapLoaderImpl<MojoExecutionException>(wrappedLog,errorRaiser);
+        TestCatalogArtifact<MojoExecutionException> wrappedTestCatalogArtifact = new TestCatalogArtifactMavenImpl(testCatalogArtifact, errorRaiser);
+        TestCatalogArtifactDeployer<MojoExecutionException> deployer = new TestCatalogArtifactDeployer<MojoExecutionException>(
+            wrappedLog, errorRaiser, bootstrapLoader, urlCalculator, restApiMetadata, authFactory);
 
-        URL testcatalogUrl = calculateTestCatalogUrl(bootstrapProperties, this.testStream, this.bootstrapUrl);
-
-        String jwt = null ;
-        // For now, if no galasa token is supplied, that's ok. It's optional.   
-        // If no galasa access token supplied by the user, the jwt will stay as null.
-        if ( (this.galasaAccessToken!=null) && (!this.galasaAccessToken.isEmpty()) ) {
-            jwt = getAuthenticatedJwt(this.authFactory, this.galasaAccessToken, this.bootstrapUrl) ;
-        }
-
-        publishTestCatalogToGalasaServer(testcatalogUrl,jwt, testCatalogArtifact);
+        // Deploy the test catalog to the Galasa server.
+        deployer.deployToServer(bootstrapUrl, testStream, galasaAccessToken, wrappedTestCatalogArtifact);
     }
 
     private Artifact getTestCatalogArtifact() {
@@ -120,129 +116,5 @@ public class DeployTestCatalog extends AbstractMojo {
         }
         return artifact;
     }
-
-    private void publishTestCatalogToGalasaServer(URL testCatalogUrl, String jwt, Artifact testCatalogArtifact) throws MojoExecutionException {
- 
-        HttpURLConnection conn = null ;
-        try {
-            conn = (HttpURLConnection) testCatalogUrl.openConnection();
-        } catch (IOException ioEx) {
-            String msg = "Problem publishing the test catalog. Could not open URL connection to the Galasa server.";
-            getLog().error(msg,ioEx);
-            throw new MojoExecutionException(msg,ioEx);
-        }
-
-        if (conn==null) {
-            throw new MojoExecutionException("Deploy to Test Catalog Store failed. Could not open a URL connection to the Galasa server.");
-        } else {
-            try {
-                postTestCatalogToGalasaServer(conn, testCatalogUrl, jwt, testCatalogArtifact);
-            } finally {
-                conn.disconnect();
-            }
-            getLog().info("Test Catalog successfully deployed to " + testCatalogUrl.toString());
-        }
-    }
-
-    private void postTestCatalogToGalasaServer(HttpURLConnection conn, URL testCatalogUrl, String jwt, Artifact testCatalogArtifact) throws MojoExecutionException {
-
-        int rc = 0 ;
-        String response = "";
-        String message = "";
-        
-        try {
-            conn.setDoOutput(true);
-            conn.setDoInput(true);
-            conn.setRequestMethod("PUT");
-            conn.addRequestProperty("Content-Type", "application/json");
-            conn.addRequestProperty("Accept", "application/json");
-
-            // Only add the jwt header if we have a jwt value.
-            if (jwt == null) {
-                getLog().info("Not sending a JWT bearer token to the server, as the galasa.token property was not supplied.");
-            } else {
-                conn.addRequestProperty("Authorization", "Bearer "+jwt);
-            }
-
-            conn.addRequestProperty("ClientApiVersion","0.32.0"); // The version of the API we coded this against.
-
-            FileUtils.copyFile(testCatalogArtifact.getFile(), conn.getOutputStream());
-            rc = conn.getResponseCode();
-            message = conn.getResponseMessage();
-
-            InputStream is = null;
-            if (rc != HttpURLConnection.HTTP_OK) {
-                is = conn.getInputStream();
-            } else {
-                is = conn.getErrorStream();
-            }
-
-            if (is != null) {
-                response = IOUtils.toString(is, "utf-8");
-            }
-        } catch(IOException ioEx) {
-            String msg = "Problem publishing the test catalog. Problem dealing with response from Galasa server.";
-            getLog().error(msg, ioEx);
-            throw new MojoExecutionException(msg,ioEx);
-        } 
-
-        if (rc != HttpURLConnection.HTTP_OK) {
-            getLog().error("Deploy to Test Catalog Store failed:-");
-            getLog().error(Integer.toString(rc) + " - " + message);
-            if (!response.isEmpty()) {
-                getLog().error(response);
-                String msg = "Failed to deploy the test catalog. The server did not reply with OK (200)";
-                getLog().error(msg);
-                throw new MojoExecutionException(msg);
-            }
-        }
-    }
-
-    // Protected so we can easily unit test it without mocking framework.
-    protected URL calculateTestCatalogUrl(Properties bootstrapProperties, String testStream, URL bootstrapUrl) throws MojoExecutionException {
-        String sTestcatalogUrl = bootstrapProperties.getProperty("framework.testcatalog.url");
-        if (sTestcatalogUrl == null || sTestcatalogUrl.trim().isEmpty()) {
-            String sBootstrapUrl = bootstrapUrl.toString();
-            if (!sBootstrapUrl.endsWith("/bootstrap")) {
-                String msg = "Unable to calculate the test catalog url, the bootstrap url does not end with /bootstrap, need a framework.testcatalog.url property in the bootstrap";
-                getLog().error(msg);
-                throw new MojoExecutionException(msg);
-            }
-
-            sTestcatalogUrl = sBootstrapUrl.substring(0, sBootstrapUrl.length() - 10) + "/testcatalog";
-        }
-
-        // convert into a proper URL
-        URL testCatalogUrl ;
-        try {
-            testCatalogUrl = new URL(sTestcatalogUrl + "/" + testStream);
-        } catch(Exception ex) {
-            String msg = "Problem publishing the test catalog. Badly formed URL to the Galasa server.";
-            getLog().error(msg,ex);
-            throw new MojoExecutionException(msg,ex);
-        }
-        return testCatalogUrl;
-    }
-
-    /**
-     * Swap the galasa token for a JWT which we can use to talk to the API server on the ecosystem.
-     * @return A JWT string (Java Web Token).
-     * @throws MojoExecutionException
-     */
-    private String getAuthenticatedJwt(AuthenticationServiceFactory authFactory, String galasaAccessToken, URL bootstrapUrl) throws MojoExecutionException {
-        String jwt;
-        try {
-            String apiServerUrlString = bootstrapUrl.toString().replaceAll("/bootstrap","");
-            HttpClient httpClient = HttpClientBuilder.create().build();
-            URL apiServerUrl = new URL(apiServerUrlString);
-            AuthenticationService authTokenService = authFactory.newAuthenticationService(apiServerUrl,galasaAccessToken,httpClient);
-            getLog().info("Turning the galasa access token into a jwt");
-            jwt = authTokenService.getJWT();
-            getLog().info("Java Web Token (jwt) obtained from the galasa ecosystem OK.");
-        } catch( Exception ex) {
-            getLog().error(ex.getMessage());
-            throw new MojoExecutionException(ex.getMessage(),ex);
-        } 
-        return jwt;
-    }
+    
 }
