@@ -20,7 +20,7 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '11'
+          java-version: '17'
           distribution: 'semeru'
           cache: maven
 
@@ -69,12 +69,12 @@ jobs:
       
       - name: Building Maven source code
         run: |
-          mvn -f galasa-maven-plugin/pom.xml deploy -Dgpg.skip=true \
+          mvn -f galasa-maven-plugin/pom.xml -X deploy -Dgpg.skip=true \
           -Dgalasa.source.repo=https://development.galasa.dev/gh/maven-repo/gradle \
           -Dgalasa.central.repo=https://repo.maven.apache.org/maven2/ \
           -Dgalasa.release.repo=file:${{ github.workspace }}/repo \
           --batch-mode --errors --fail-at-end \
-          --settings /home/runner/work/gpg/settings.xml
+          --settings /home/runner/work/gpg/settings.xml 
 
       - name: Build Maven image for testing
         uses: docker/build-push-action@v5
