@@ -20,7 +20,7 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '11'
+          java-version: '17'
           distribution: 'semeru'
           cache: maven
 
@@ -74,7 +74,7 @@ jobs:
           -Dgalasa.central.repo=https://repo.maven.apache.org/maven2/ \
           -Dgalasa.release.repo=file:${{ github.workspace }}/repo \
           --batch-mode --errors --fail-at-end \
-          --settings /home/runner/work/gpg/settings.xml 2>&1 | tee build.log
+          --settings /home/runner/work/gpg/settings.xml | tee build.log
 
       - name: Build Maven image for testing
         uses: docker/build-push-action@v5
