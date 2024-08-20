@@ -75,7 +75,21 @@ jobs:
           -Dgalasa.central.repo=https://repo.maven.apache.org/maven2/ \
           -Dgalasa.release.repo=file:${{ github.workspace }}/repo \
           --batch-mode --errors --fail-at-end \
-          --settings /home/runner/work/gpg/settings.xml | tee build.log
+          --settings /home/runner/work/gpg/settings.xml 2>&1 | tee build.log
+        
+      - name: Upload Maven Build Log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maven-build-log
+          path: build.log
+        
+      - name: Upload Junit Test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Junit-test-report
+          path: ${{github.workspace}}/galasa-maven-plugin/target/surefire-reports
 
       - name: Build Maven image for testing
         uses: docker/build-push-action@v5
