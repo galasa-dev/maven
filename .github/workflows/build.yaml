@@ -98,26 +98,28 @@ jobs:
       - name: Build Maven source code
         if: github.event_name == 'push'
         run: |
-          mvn -f galasa-maven-plugin/pom.xml deploy \
+          set -o pipefail
+          mvn -f galasa-maven-plugin/pom.xml -X deploy \
           -Dgalasa.source.repo=https://development.galasa.dev/${{ env.ARGO_APP_BRANCH }}/maven-repo/gradle \
           -Dgalasa.central.repo=https://repo.maven.apache.org/maven2/ \
           -Dgalasa.release.repo=file:${{ github.workspace }}/repo \
           -Dgalasa.jacocoEnabled=true \
           -Dgalasa.isRelease=true \
           --batch-mode --errors --fail-at-end \
-          --settings /home/runner/work/gpg/settings.xml
+          --settings /home/runner/work/gpg/settings.xml 2>&1 | tee build.log
 
       - name: Build Maven source code
         if: github.event_name == 'workflow_dispatch' # Use the input values provided by the workflow dispatch.
         run: |
-          mvn -f galasa-maven-plugin/pom.xml deploy \
+          set -o pipefail
+          mvn -f galasa-maven-plugin/pom.xml -X deploy \
           -Dgalasa.source.repo=https://development.galasa.dev/${{ env.ARGO_APP_BRANCH }}/maven-repo/gradle \
           -Dgalasa.central.repo=https://repo.maven.apache.org/maven2/ \
           -Dgalasa.release.repo=file:${{ github.workspace }}/repo \
           -Dgalasa.jacocoEnabled=${{ inputs.jacocoEnabled }} \
           -Dgalasa.isRelease=${{ inputs.isMainOrRelease }} \
           --batch-mode --errors --fail-at-end \
-          --settings /home/runner/work/gpg/settings.xml
+          --settings /home/runner/work/gpg/settings.xml 2>&1 | tee build.log
 
       - name: Upload Maven Build Log
         if: always()
@@ -125,6 +127,13 @@ jobs:
         with:
           name: maven-build-log
           path: build.log
+          
+      - name: Upload Junit Test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Junit-test-report
+          path: ${{github.workspace}}/galasa-maven-plugin/target/surefire-reports
 
       - name: Login to Github Container Registry
         uses: docker/login-action@v3
