@@ -74,8 +74,8 @@ jobs:
           -Dgalasa.source.repo=https://development.galasa.dev/gh/maven-repo/gradle \
           -Dgalasa.central.repo=https://repo.maven.apache.org/maven2/ \
           -Dgalasa.release.repo=file:${{ github.workspace }}/repo \
-          --batch-mode --errors --fail-at-end \
-          --settings /home/runner/work/gpg/settings.xml 2>&1 | tee build.log
+          --batch-mode --errors --fail-at-end 2>&1 | tee build.log
+        #  --settings /home/runner/work/gpg/settings.xml 
         
       - name: Upload Maven Build Log
         if: always()
