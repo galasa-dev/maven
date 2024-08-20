@@ -69,6 +69,7 @@ jobs:
       
       - name: Building Maven source code
         run: |
+          set -o pipefail
           mvn -f galasa-maven-plugin/pom.xml -X deploy -Dgpg.skip=true \
           -Dgalasa.source.repo=https://development.galasa.dev/gh/maven-repo/gradle \
           -Dgalasa.central.repo=https://repo.maven.apache.org/maven2/ \
