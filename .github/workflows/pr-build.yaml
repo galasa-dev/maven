@@ -68,7 +68,7 @@ jobs:
       #     cp /home/runner/work/secrets/settings.xml /home/runner/work/gpg/settings.xml
 
       - name: Import GPG secrets and create custom settings.xml
-        uses: galasa-dev/automation/.github/actions/maven-gpg-setup@main
+        uses: jadecarino/automation/.github/actions/maven-gpg-setup@main
         with:
           MAVEN_SETTINGS_XML: ${{ secrets.MAVEN_SETTINGS_XML }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
